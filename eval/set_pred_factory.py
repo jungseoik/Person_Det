@@ -5,7 +5,7 @@ from tqdm import tqdm
 import numpy as np
 from abc import ABC, abstractmethod
 from ultralytics import YOLO
-from assets.config import PERSON_DET, SOURCE_DIR, PRED_DIR, LABEL_DIR
+from assets.config import PERSON_DET, SOURCE_DIR, PRED_DIR, LABEL_DIR, YOLO_11_X, YOLO_11_S, YOLO_11_N
 
 # 기본 모델 인터페이스
 class DetectionModel(ABC):
@@ -54,16 +54,22 @@ class ClipEBCAdapter(DetectionModel):
 # 모델 팩토리
 class CrowdModelEval:
     @staticmethod
-    def get_model(model_type, model_path=PERSON_DET):
-        if model_type.lower() == 'yolo':
-            return YOLOAdapter().load_model(model_path)
+    def get_model(model_type):
+        if model_type.lower() == 'yolov11s':
+            return YOLOAdapter().load_model(YOLO_11_S)
+        elif model_type.lower() == 'yolov11x':
+            return YOLOAdapter().load_model(YOLO_11_X)
+        elif model_type.lower() == 'yolov11n':
+            return YOLOAdapter().load_model(YOLO_11_N)
+        elif model_type.lower() == 'PersonDet':
+            return YOLOAdapter().load_model(PERSON_DET)
         elif model_type.lower() == 'clip_ebc':
-            return ClipEBCAdapter().load_model(model_path)
+            return ClipEBCAdapter().load_model(None)
         else:
             raise ValueError(f"지원하지 않는 모델 유형: {model_type}")
 
 # 개선된 평가 함수
-def evaluate_images(model_type='yolo', model_path=None, **kwargs):
+def evaluate_images(model_type='yolo', **kwargs):
     """
     이미지 평가를 수행하고 예측 결과를 저장하는 함수
     
@@ -73,10 +79,12 @@ def evaluate_images(model_type='yolo', model_path=None, **kwargs):
         **kwargs: 모델별 추가 매개변수
     """
     # 모델 팩토리를 통해 모델 생성
-    model = CrowdModelEval.get_model(model_type, model_path)
+    model = CrowdModelEval.get_model(model_type)
     
     os.makedirs(PRED_DIR, exist_ok=True)
-    
+    model_pred_dir = os.path.join(PRED_DIR, model_type)
+    os.makedirs(model_pred_dir, exist_ok=True)
+
     csv_files = glob.glob(os.path.join(LABEL_DIR, "*.csv"))
     print(f"{len(csv_files)}개의 CSV 파일을 찾았습니다.")
     print(f"사용 모델: {model_type}")
@@ -131,14 +139,14 @@ def evaluate_images(model_type='yolo', model_path=None, **kwargs):
                 print(f"  이미지 처리 오류 ({image_name}): {e}")
         
         # 출력 파일명에 모델 유형 추가
-        output_file = os.path.join(PRED_DIR, f"{model_type}_{os.path.basename(csv_file)}")
+        # output_file = os.path.join(PRED_DIR, f"{model_type}_{os.path.basename(csv_file)}")
+        output_file = os.path.join(model_pred_dir, os.path.basename(csv_file))
         df.to_csv(output_file, index=False)
         print(f"  처리 완료: {processed_count}/{len(df)} 이미지, 결과 저장됨: {output_file}")
     
     print("\n모든 이미지 처리 및 예측이 완료되었습니다.")
 
-
 # 사용 예시
 if __name__ == "__main__":
     # YOLO 모델 사용 예
-    evaluate_images(model_type='yolo',model_path= PERSON_DET, conf=0.15, classes=[0])
+    evaluate_images(model_type='yolov11n', conf=0.15, classes=[0])
