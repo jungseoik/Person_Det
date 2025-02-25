@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 import math
 
-def calculate_metrics(pred_dir='pred'):
+def calculate_metrics(pred_dir=None):
     """
     Micro 및 Macro 관점에서 MSE, RMSE, MAE를 계산하는 함수
     
