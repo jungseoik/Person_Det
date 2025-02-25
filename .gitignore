@@ -173,6 +173,5 @@ cython_debug/
 *.pt
 CLIP_EBC
 pred
-lebel
 metrics_result
 *.mp4
